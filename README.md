@@ -1,4 +1,4 @@
-# etirwer
+# r
 
 This is a simple command line utility written in Rust for performing various file and directory operations. It supports the following commands:
 
@@ -8,13 +8,17 @@ This is a simple command line utility written in Rust for performing various fil
 - `find`: Searches for a file in a directory.
 - `grep`: Searches for a pattern in a file.
 
+## Prerequisites
+
+- Have Rust [Installed](https://www.rust-lang.org/tools/install)
+
 ## Usage
 
 To use the utility, compile the code and run the executable with the desired command followed by arguments.
 
 ```
-$ cargo build
-$ ./etirwer <command> [arguments]
+$ rustc r.rs
+$ ./r <command> [arguments]
 ```
 
 Replace `<command>` with one of the supported commands and `[arguments]` with appropriate arguments based on the chosen command.
@@ -26,7 +30,7 @@ Replace `<command>` with one of the supported commands and `[arguments]` with ap
 Echoes the input arguments.
 
 ```
-$ ./etirwer echo Hello World
+$ ./r echo Hello World
 Hello World
 ```
 
@@ -35,7 +39,7 @@ Hello World
 Concatenates files and prints their contents.
 
 ```
-$ ./etirwer cat file1.txt file2.txt
+$ ./r cat file1.txt file2.txt
 Contents of file1.txt
 Contents of file2.txt
 ```
@@ -45,7 +49,7 @@ Contents of file2.txt
 Lists the contents of a directory.
 
 ```
-$ ./etirwer ls /path/to/directory
+$ ./r ls /path/to/directory
 file1.txt
 file2.txt
 subdirectory
@@ -56,7 +60,7 @@ subdirectory
 Searches for a file in a directory.
 
 ```
-$ ./etirwer find /path/to/directory filename.txt
+$ ./r find /path/to/directory filename.txt
 /path/to/directory/filename.txt
 ```
 
@@ -65,7 +69,7 @@ $ ./etirwer find /path/to/directory filename.txt
 Searches for a pattern in a file.
 
 ```
-$ ./etirwer grep filename.txt pattern
+$ ./r grep filename.txt pattern
 1: Line containing the pattern
 5: Another line with the pattern
 ```
