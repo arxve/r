@@ -1,12 +1,15 @@
-# r
+# r - Command Line Utility
 
-This is a simple command line utility written in Rust for performing various file and directory operations. It supports the following commands:
+This is a simple command-line utility written in Rust that provides functionalities similar to some common Unix commands. 
 
-- `echo`: Echoes the input arguments.
-- `cat`: Concatenates files and prints their contents.
-- `ls`: Lists the contents of a directory.
-- `find`: Searches for a file in a directory.
-- `grep`: Searches for a pattern in a file.
+## Features
+
+- **Echo**: Print the input arguments.
+- **Cat**: Concatenate files and print them to the standard output.
+- **Ls**: List directory contents.
+- **Find**: Search for files or directories.
+- **Grep**: Match text in files.
+
 
 ## Prerequisites
 
@@ -14,7 +17,7 @@ This is a simple command line utility written in Rust for performing various fil
 
 ## Usage
 
-To use the utility, compile the code and run the executable with the desired command followed by arguments.
+Make sure you have Rust installed. You can run the utility by compiling the code and executing the resulting binary.
 
 ```
 $ rustc r.rs
