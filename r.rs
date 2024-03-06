@@ -1,7 +1,10 @@
 use std::env;
 use std::fs;
 use std::io::{self, BufRead};
-//use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::thread;
+use std::sync::{Arc, Mutex};
+use colored::*;
 
 // Function to echo the input arguments
 fn echo(args: Vec<String>) {
@@ -11,102 +14,111 @@ fn echo(args: Vec<String>) {
 // Function to concatenate files
 fn cat(files: Vec<String>) {
     for file in files {
-        // Attempt to read the content of each file
-        if let Ok(contents) = fs::read_to_string(&file) {
-            // Print the content of each file
-            println!("{}", contents);
-        } else {
-            // Print an error message if reading fails
-            eprintln!("Error: Unable to read file '{}'", file);
+        match fs::read_to_string(&file) {
+            Ok(contents) => println!("{}", contents),
+            Err(e) => eprintln!("Error: Unable to read file '{}': {}", file, e),
         }
     }
 }
 
 // Function to list directories
 fn ls(directory: &str) {
-    // Attempt to read the directory
-    if let Ok(entries) = fs::read_dir(directory) {
-        // Iterate over each entry in the directory
-        for entry in entries {
-            // Attempt to get the file name of each entry
-            if let Ok(entry) = entry {
-                // Print the file name
-                println!("{}", entry.file_name().to_string_lossy());
+    match fs::read_dir(directory) {
+        Ok(entries) => {
+            for entry in entries {
+                match entry {
+                    Ok(entry) => println!("{}", entry.file_name().to_string_lossy()),
+                    Err(e) => eprintln!("Error: Unable to read directory entry: {}", e),
+                }
             }
         }
-    } else {
-        // Print an error message if reading fails
-        eprintln!("Error: Unable to read directory '{}'", directory);
+        Err(e) => eprintln!("Error: Unable to read directory '{}': {}", directory, e),
     }
 }
 
 // Function to locate files or directories
 fn find(directory: &str, filename: &str) {
-    let mut found = false;
-    // Attempt to read the directory
-    if let Ok(entries) = fs::read_dir(directory) {
-        // Iterate over each entry in the directory
-        for entry in entries {
-            // Attempt to get the file name of each entry
-            if let Ok(entry) = entry {
+    let paths = match fs::read_dir(directory) {
+        Ok(paths) => paths,
+        Err(e) => {
+            eprintln!("Error: Unable to read directory '{}': {}", directory, e);
+            return;
+        }
+    };
+
+    let found_paths: Arc<Mutex<Vec<PathBuf>>> = Arc::new(Mutex::new(Vec::new()));
+    let mut handles = vec![];
+
+    for path in paths {
+        let found_paths_clone = Arc::clone(&found_paths);
+        let directory = directory.to_string();
+        handles.push(thread::spawn(move || {
+            if let Ok(entry) = path {
                 let path = entry.path();
-                // Check if the entry is a file and its name matches the given filename
                 if path.is_file() && path.file_name().unwrap() == filename {
-                    // Print the path of the found file
-                    println!("{}", path.display());
-                    found = true;
+                    let mut found_paths = found_paths_clone.lock().unwrap();
+                    found_paths.push(path);
                 }
             }
-        }
+        }));
     }
-    // Print a message if the file is not found
-    if !found {
+
+    for handle in handles {
+        handle.join().expect("Thread panicked");
+    }
+
+    let found_paths = found_paths.lock().unwrap();
+    if found_paths.is_empty() {
         println!("File '{}' not found in directory '{}'", filename, directory);
+    } else {
+        for path in found_paths.iter() {
+            println!("{}", path.display());
+        }
     }
 }
 
 // Function to match text in files
 fn grep(filename: &str, pattern: &str) {
-    // Attempt to open the file
-    if let Ok(file) = fs::File::open(filename) {
-        let reader = io::BufReader::new(file);
-        // Iterate over each line in the file
-        for (line_number, line) in reader.lines().enumerate() {
-            if let Ok(line) = line {
-                // Check if the line contains the pattern
-                if line.contains(pattern) {
-                    // Print the line number and the line content
-                    println!("{}: {}", line_number + 1, line);
+    match fs::File::open(filename) {
+        Ok(file) => {
+            let reader = io::BufReader::new(file);
+            for (line_number, line) in reader.lines().enumerate() {
+                if let Ok(line) = line {
+                    if line.contains(pattern) {
+                        println!("{}: {}", (line_number + 1).to_string().green(), line);
+                    }
+                } else {
+                    eprintln!("Error: Unable to read line from file '{}'", filename);
+                    return;
                 }
             }
         }
-    } else {
-        // Print an error message if opening the file fails
-        eprintln!("Error: Unable to open file '{}'", filename);
+        Err(e) => eprintln!("Error: Unable to open file '{}': {}", filename, e),
     }
 }
 
 fn main() {
-    // Get the command-line arguments
     let args: Vec<String> = env::args().collect();
 
-    // Check if there are enough arguments
     if args.len() < 2 {
         println!("Usage: {} <command> [arguments]", args[0]);
         return;
     }
 
-    // Extract the command and arguments
     let command = &args[1];
     let arguments = &args[2..];
 
-    // Match the command to decide which function to call
     match command.as_str() {
         "echo" => echo(arguments.to_vec()),
         "cat" => cat(arguments.to_vec()),
-        "ls" => ls(&arguments[0]),
+        "ls" => {
+            if arguments.is_empty() {
+                println!("Usage: {} ls <directory>", args[0]);
+                return;
+            }
+            ls(&arguments[0])
+        }
         "find" => {
-            // Ensure 'find' command has the correct number of arguments
             if arguments.len() != 2 {
                 println!("Usage: {} find <directory> <filename>", args[0]);
                 return;
@@ -114,7 +126,6 @@ fn main() {
             find(&arguments[0], &arguments[1])
         }
         "grep" => {
-            // Ensure 'grep' command has the correct number of arguments
             if arguments.len() != 2 {
                 println!("Usage: {} grep <filename> <pattern>", args[0]);
                 return;
